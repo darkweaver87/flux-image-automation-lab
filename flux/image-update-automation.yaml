@@ -1,0 +1,28 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: lab-main
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: lab-main
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: bot@darkweaver87.dev
+        name: flux-bot
+      messageTemplate: |
+        ci(flux): :rocket: {{ range .Changed.Changes }}{{ print .Setter | replace "flux-system:" ""}} {{ end }}
+
+        {{- range .Changed.Changes }}
+        - {{ printf "%s: %s -> %s" (.Setter | replace "flux-system:" "" | replace ":tag" "") .OldValue .NewValue }}
+        {{- end }}
+    push:
+      branch: flux-image-automation/main/lab-main
+  update:
+    strategy: Setters

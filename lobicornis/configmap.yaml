@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lobicornis-config
+  namespace: lobicornis
+data:
+  lobicornis.yml: |
+    github:
+      user: darkweaver87
+
+    git:
+      userName: darkweaver87
+      email: bot@darkweaver87.dev
+
+    server:
+      port: 8080
+
+    extra:
+      logLevel: debug
+      dryRun: false
+
+    retry:
+      interval: 1m0s
+      number: 1
+      onMergeable: true
+      onStatuses: false
+
+    default:
+      checkNeedUpToDate: false
+      forceNeedUpToDate: true
+      mergeMethod: squash
+      minLightReview: 0
+      minReview: 0
+      needMilestone: false
+      addErrorInComment: false
+
+    repositories:
+      'darkweaver87/flux-image-automation-lab':
+        minLightReview: 0
+        minReview: 0

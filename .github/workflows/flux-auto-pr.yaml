@@ -1,0 +1,70 @@
+name: 🤖 Flux Auto-PR
+run-name: 🤖 Flux Auto-PR ${{ github.ref_name }}
+on:
+  push:
+    branches:
+      - 'flux-image-automation/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pull-request:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    steps:
+      - name: parse branch name
+        id: parse
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          BASE_BRANCH="$(echo "${REF_NAME}" | cut -d/ -f2)"
+          AUTOMATION_NAME="$(echo "${REF_NAME}" | cut -d/ -f3-)"
+          if [ -z "${BASE_BRANCH}" ] || [ -z "${AUTOMATION_NAME}" ]; then
+            echo "::error::Invalid branch name '${REF_NAME}', expected flux-image-automation/<base>/<automation-name>"
+            exit 1
+          fi
+          echo "base-branch=${BASE_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "automation-name=${AUTOMATION_NAME}" >> "$GITHUB_OUTPUT"
+      - name: ensure pull request exists
+        id: ensure-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRAEFIKER_GH_TOKEN: ${{ secrets.TRAEFIKER_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+          BASE_BRANCH: ${{ steps.parse.outputs.base-branch }}
+          AUTOMATION_NAME: ${{ steps.parse.outputs.automation-name }}
+        run: |
+          PR_URL=$(gh pr list \
+            --repo="${GITHUB_REPO}" \
+            --head="${HEAD_BRANCH}" \
+            --base="${BASE_BRANCH}" \
+            --state=open \
+            --json=url \
+            --jq='.[0].url')
+          if [ -z "${PR_URL}" ]; then
+            PR_URL=$(GH_TOKEN="${TRAEFIKER_GH_TOKEN}" gh pr create \
+              --repo="${GITHUB_REPO}" \
+              --head="${HEAD_BRANCH}" \
+              --base="${BASE_BRANCH}" \
+              --title="ci(flux): :rocket: ${AUTOMATION_NAME} image automation updates" \
+              --body=":robot: Automated PR opened by Flux \`${AUTOMATION_NAME}\` image automation.")
+          fi
+          echo "pr-url=${PR_URL}" >> "$GITHUB_OUTPUT"
+      - name: wait for CI to be green
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr checks "${{ steps.ensure-pr.outputs.pr-url }}" --watch --fail-fast
+      - name: add merge labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit "${{ steps.ensure-pr.outputs.pr-url }}" \
+            --add-label "bot/approve" \
+            --add-label "bot/merge-method-ff" \
+            --add-label "status/3-needs-merge"

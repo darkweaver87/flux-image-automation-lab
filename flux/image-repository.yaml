@@ -1,0 +1,17 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: traefik
+  namespace: flux-system
+spec:
+  image: docker.io/traefik/traefik
+  interval: 1m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: whoami
+  namespace: flux-system
+spec:
+  image: docker.io/traefik/whoami
+  interval: 1m0s
