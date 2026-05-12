@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: 'read'
       pull-requests: 'write'
+      checks: 'read'
     steps:
       - name: parse branch name
         id: parse
@@ -56,10 +57,11 @@ jobs:
           fi
           echo "pr-url=${PR_URL}" >> "$GITHUB_OUTPUT"
       - name: wait for CI to be green
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr checks "${{ steps.ensure-pr.outputs.pr-url }}" --watch --fail-fast
+        uses: poseidon/wait-for-status-checks@v0.6.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          interval: 10s
+          timeout: 1200s
       - name: add merge labels
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
