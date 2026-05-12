@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: traefik
-          image: docker.io/library/traefik:v3.6.0 # {"$imagepolicy": "flux-system:traefik"}
+          image: docker.io/library/traefik:v3.7.1 # {"$imagepolicy": "flux-system:traefik"}
           args:
             - --ping=true
           ports:
