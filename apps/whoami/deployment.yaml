@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: whoami
-          image: docker.io/traefik/whoami:v1.10.0 # {"$imagepolicy": "flux-system:whoami"}
+          image: docker.io/traefik/whoami:v1.11.0 # {"$imagepolicy": "flux-system:whoami"}
           ports:
             - name: http
               containerPort: 8080
