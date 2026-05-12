@@ -8,7 +8,7 @@ spec:
     name: traefik
   policy:
     semver:
-      range: '=3.0.0'
+      range: '=3.6.0'
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
