@@ -154,3 +154,7 @@ kubectl -n lab-apps get deploy -o jsonpath='{range .items[*]}{.metadata.name}{"\
 kind delete cluster --name flux-auto-lab
 gh repo delete darkweaver87/flux-image-automation-lab --yes
 ```
+
+## Lobicornis merge probe
+
+This section was added by a test PR to verify lobicornis can fast-forward-merge with the bot labels.
