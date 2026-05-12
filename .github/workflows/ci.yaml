@@ -5,7 +5,11 @@ on:
       - main
 
 jobs:
-  noop:
+  yamllint:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "lab CI placeholder so 'gh pr checks --watch' has something to wait on"
+      - uses: actions/checkout@v4
+      - name: install yamllint
+        run: pip install --quiet yamllint
+      - name: lint
+        run: yamllint -s .

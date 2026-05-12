@@ -24,7 +24,7 @@ apps/                               workloads carrying setter markers
 lobicornis/                         merge bot (Deployment+Service+CronJob)
 .github/workflows/
   flux-auto-pr.yaml                 the workflow under test
-  ci.yaml                           dummy check so `gh pr checks --watch` resolves
+  ci.yaml                           yamllint check (gives `gh pr checks --watch` something to wait on)
 ```
 
 ## Prerequisites
