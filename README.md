@@ -10,6 +10,7 @@ Mirrors the prod setup in `traefik/infra` (PR: open PR for flux image automation
 - The `.github/workflows/flux-auto-pr.yaml` workflow turns that push into a PR with merge labels.
 - `lobicornis` merges the PR based on the labels.
 - A single automation cycle batches multiple `ImagePolicy` setter updates into one commit / one PR.
+- **No `wait for CI` step is needed**: the workflow labels the PR immediately, and `lobicornis` only merges once the PR is `clean` (up-to-date + every check green). The `commit-back` workflow keeps the PR `unstable` for ~1 min after labeling, proving lobicornis waits for it instead of merging early.
 
 ## Layout
 
@@ -23,8 +24,9 @@ flux/                               GitOps entry point synced by flux
 apps/                               workloads carrying setter markers
 lobicornis/                         merge bot (Deployment+Service+CronJob)
 .github/workflows/
-  flux-auto-pr.yaml                 the workflow under test
-  ci.yaml                           yamllint check (gives `gh pr checks --watch` something to wait on)
+  flux-auto-pr.yaml                 the workflow under test (labels immediately, no wait step)
+  ci.yaml                           yamllint check
+  commit-back.yaml                  slow non-required check that commits back (mirrors build/download-resources)
 ```
 
 ## Prerequisites
@@ -132,9 +134,10 @@ flux logs --kind=ImageUpdateAutomation --tail=20 -f
 
 Within ~1 minute:
 1. `ImageUpdateAutomation/lab-main` produces one commit on branch `flux-image-automation/main/lab-main` that updates **both** image tags (`apps/traefik/deployment.yaml` and `apps/whoami/deployment.yaml`).
-2. GitHub Action `🤖 Flux Auto-PR` fires, opens a PR titled `ci(flux): :rocket: lab-main image automation updates`, waits for `ci` to pass, then adds `bot/approve`, `bot/merge-method-ff`, `status/3-needs-merge`.
-3. Within the next 2 min (cronjob cadence), the lobicornis tick CronJob curls the lobicornis service, lobicornis sees the labels and fast-forward-merges the PR.
-4. Flux re-syncs `main`, `Kustomization/lab-apps` reapplies the new image tags, both Deployments roll to the new versions.
+2. GitHub Action `🤖 Flux Auto-PR` fires, opens a PR titled `ci(flux): :rocket: lab-main image automation updates`, and immediately adds `bot/approve`, `bot/merge-method-ff`, `status/3-needs-merge` (no wait step).
+3. `ci` and `commit-back` start on the PR. While they run the PR is `unstable`, so even though it is already labeled, lobicornis does **not** merge. `commit-back` pushes one `dist/resources.txt` commit; on its re-run the dist is unchanged, so it stops.
+4. Once every check is green the PR becomes `clean`; within the next ~1 min (cronjob cadence) the lobicornis tick CronJob curls the lobicornis service, lobicornis sees the labels and fast-forward-merges the PR.
+5. Flux re-syncs `main`, `Kustomization/lab-apps` reapplies the new image tags, both Deployments roll to the new versions.
 
 Verify:
 ```bash

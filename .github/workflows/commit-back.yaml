@@ -1,0 +1,44 @@
+name: commit-back
+# Mirrors prod `build-resources` / `download-resources`: a non-required check
+# that regenerates artifacts and commits them back onto the PR branch. Its
+# purpose in the lab is to keep the PR `unstable` for a while after the merge
+# labels are applied, proving lobicornis waits for it instead of merging early.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  commit-back:
+    # Only the flux automation PRs carry this branch prefix.
+    if: startsWith(github.head_ref, 'flux-image-automation/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          # PAT so the pushed commit re-triggers CI on the PR.
+          token: ${{ secrets.TRAEFIKER_GITHUB_TOKEN }}
+      - name: regenerate dist
+        run: |
+          # Simulate a slow build so the PR stays `unstable` after labeling.
+          sleep 60
+          mkdir -p dist
+          # Idempotent: content derives only from tracked files, so a re-run
+          # after the commit-back produces no diff and the loop terminates.
+          sha256sum apps/*/deployment.yaml > dist/resources.txt
+      - name: commit if changed
+        env:
+          GH_TOKEN: ${{ secrets.TRAEFIKER_GITHUB_TOKEN }}
+        run: |
+          git config user.name darkweaver87
+          git config user.email bot@darkweaver87.dev
+          if git diff --quiet -- dist/resources.txt; then
+            echo "dist already up to date, nothing to commit"
+            exit 0
+          fi
+          git add dist/resources.txt
+          git commit -m "ci(resources): regenerate dist"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
