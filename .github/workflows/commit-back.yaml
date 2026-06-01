@@ -35,10 +35,12 @@ jobs:
         run: |
           git config user.name darkweaver87
           git config user.email bot@darkweaver87.dev
-          if git diff --quiet -- dist/resources.txt; then
+          # Stage first: `git diff` ignores untracked files, so a brand-new
+          # dist/ would otherwise look unchanged. Check the index instead.
+          git add dist/resources.txt
+          if git diff --cached --quiet -- dist/resources.txt; then
             echo "dist already up to date, nothing to commit"
             exit 0
           fi
-          git add dist/resources.txt
           git commit -m "ci(resources): regenerate dist"
           git push origin "HEAD:${GITHUB_HEAD_REF}"
