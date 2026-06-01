@@ -35,12 +35,14 @@ jobs:
         run: |
           git config user.name darkweaver87
           git config user.email bot@darkweaver87.dev
-          # Stage first: `git diff` ignores untracked files, so a brand-new
-          # dist/ would otherwise look unchanged. Check the index instead.
-          git add dist/resources.txt
-          if git diff --cached --quiet -- dist/resources.txt; then
-            echo "dist already up to date, nothing to commit"
+          # Commit at most ONCE per branch. Deriving dist from deployment.yaml
+          # is not a safe idempotency key: Flux keeps rewriting those files, so
+          # a content check would re-commit on every image flap and amplify
+          # Flux's own loop. An existence check on the tracked file can't loop.
+          if git cat-file -e "HEAD:dist/resources.txt" 2>/dev/null; then
+            echo "dist already present on branch, nothing to do"
             exit 0
           fi
+          git add dist/resources.txt
           git commit -m "ci(resources): regenerate dist"
           git push origin "HEAD:${GITHUB_HEAD_REF}"
