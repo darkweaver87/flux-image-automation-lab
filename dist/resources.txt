@@ -1,0 +1,2 @@
+f403e87a17fc068fbe0d98a44afe647f81e86b8bf55fea359b169eb18d7ac0df  apps/traefik/deployment.yaml
+34104f4adc35bf312b63c5727a2fd65876927075313dbcbcee339b301c83860e  apps/whoami/deployment.yaml
